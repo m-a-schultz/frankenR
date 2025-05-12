@@ -1,96 +1,112 @@
-# ---- Capture Object Class and Methods ----
+# ---- Capture Object Classes and Methods ----
 
-#' Create a capture_object
+#' Create call object structure from an expression
 #'
-#' Defines a lightweight container for storing code expressions
-#' with a custom class.
-#'
-#' @param exprs A list of expressions (default: empty list).
-#' @return An object of class `capture_object`.
-#' @export
-capture_object <- function(exprs = list()) {
-  structure(exprs, class = "capture_object")
-}
-
-#' Subset a capture_object
-#'
-#' Provides subsetting (`[`) for `capture_object` while preserving the class.
-#'
-#' @param x A `capture_object`.
-#' @param i Subset index.
-#' @param ... Additional arguments (ignored).
-#' @return A subsetted `capture_object`.
-#' @export
-`[.capture_object` <- function(x, i, ...) {
-  subset <- NextMethod("[")
-  class(subset) <- "capture_object"
-  subset
-}
-
-#' Replace expressions inside a code_capture
-#'
-#' Provides assignment (`[<-`) for replacing elements of a `code_capture` object.
-#'
-#' @param x A `code_capture` object.
-#' @param i Index to replace.
-#' @param value New value(s) (must be a call or list of calls).
-#' @return The modified `code_capture` object.
-#' @export
-`[<-.code_capture` <- function(x, i, value) {
-  stopifnot(is.call(value) || is.list(value))
-  if (is.call(value)) value <- list(value)
-  x$expressions[i] <- value
-  x
-}
-
-# ---- Print Method ----
-
-#' Print a code_capture object
-#'
-#' Prints a summary of the `code_capture` object, including its type and contained expressions.
-#'
-#' @param x A `code_capture` object.
-#' @param ... Additional arguments (ignored).
-#' @return Invisibly returns the object.
-#' @export
-print.code_capture <- function(x, ...) {
-  cat("== Code Capture ==\n")
-  cat("Type: ", x$capture_type, "\n")
-  cat("Expressions:\n")
-  exprs <- get_expr_text(x, collapse = "\n")
-  for (i in seq_along(exprs)) {
-    cat(sprintf("[%d] %s\n", i, exprs[[i]]))
+#' @param expr A call
+#' @param meta A named list of metadata
+#' @return A list with expr and meta fields
+#' @keywords internal
+new_callobj <- function(expr, meta = list()) {
+  if (!is.call(expr)) {
+    warning("Non-call object encountered during capture. Skipping.")
+    return(NULL)
   }
-  invisible(x)
+  structure(
+    list(expr = expr, meta = meta),
+    class = 'callobj'
+  )
 }
 
-#' Subset a code_capture object
-#'
-#' Provides subsetting (`[`) for `code_capture` while preserving the class and metadata.
-#'
-#' @param x A `code_capture` object.
-#' @param i Subset indices.
-#' @param ... Ignored.
-#' @return A subsetted `code_capture` object.
-#' @export
-`[.code_capture` <- function(x, i, ...) {
-  stopifnot(inherits(x, "code_capture"))
 
-  subset_expressions <- x$expressions[i]
-
-  # subset meta too, but safely (meta can be NULL or shorter than expressions)
-  subset_meta <- if (!is.null(x$meta) && length(x$meta) >= max(i, na.rm = TRUE)) {
-    x$meta[i]
-  } else {
-    vector("list", length(subset_expressions))
+new_capture <- function(expr_meta_list, capture_type = "unknown") {
+  stopifnot(is.list(expr_meta_list))
+  for (item in expr_meta_list) {
+    stopifnot(is.list(item), "expr" %in% names(item), "meta" %in% names(item))
   }
 
   structure(
     list(
-      capture_type = x$capture_type,
-      expressions = subset_expressions,
-      meta = subset_meta
+      capture_type = capture_type,
+      data = expr_meta_list
     ),
     class = "code_capture"
   )
 }
+
+# ---- Format Captures ----
+
+#' Format a set of expressions into a code_capture object
+#'
+#' Internal function to wrap expressions and optional metadata into a capture object.
+#'
+#' @param expr A call or list of calls.
+#' @param meta A list of metadata (default empty list).
+#' @param capture_type A string describing the capture type ("block", "script", etc.).
+#' @return A `code_capture` object.
+#' @keywords internal
+format_capture <- function(expr, meta = list(), capture_type = "unknown") {
+  if (is.list(expr) && all(vapply(expr, is.list, logical(1))) &&
+      all(vapply(expr, function(x) all(c("expr", "meta") %in% names(x)), logical(1)))) {
+    expr_meta_list <- expr
+  } else if (is_call_or_list(expr)) {
+    # Build unified format from expr + meta
+    exprs <- if (is.call(expr)) list(expr) else expr
+    if(is.null(meta) || length(meta)==0)
+      meta <- vector("list", length(exprs))
+    expr_meta_list <- Map(new_callobj,
+                          exprs,
+                          meta)
+  } else {
+    stop("Unsupported input to format_capture")
+  }
+
+  new_capture(expr_meta_list, capture_type)
+}
+
+#' Format a set of expressions into a code_capture object
+#'
+#' Modifies parts of a capture object
+#'
+#' @param capture A `code_capture` object to be modified
+#' @param expr (optional) A call or list of calls.
+#' @param meta (optional) A list of metadata (default empty list).
+#' @param capture_type (optional) A string describing the capture type ("block", "script", etc.).
+#' @return A `code_capture` object.
+#' @keywords internal
+update_capture <- function(capture, expr=NA, meta = NA, capture_type = NA) {
+  if(!is.na(expr)[1])
+    capture <- set_expressions(capture, expr)
+  if(!is.na(meta)[1])
+    capture <- set_all_metadata(capture, meta)
+  if(!is.na(capture_type))
+    capture$capture_type = capture_type
+  capture
+}
+
+# ---- Print Method ----
+
+#' Print method for code_capture objects
+#' @param x A `code_capture` object
+#' @param with_meta Boolean; Should metadata be printed
+#' @param ... Ignored
+#' @export
+print.code_capture <- function(x, with_meta=TRUE, ...) {
+  cat("== Code Capture ==\n")
+  #cat("Type:", x$capture_type, "\n")
+  #cat("Expressions:\n")
+  for (i in seq_along(x$data)) {
+    expr <- x$data[[i]]$expr
+    code <- deparse(expr)
+    if(with_meta){
+      if(length(x$data[[i]]$meta)>0){
+        comment <- paste0('     # ',
+                          paste0(names(x$data[[i]]$meta),' = ', vapply(x$data[[i]]$meta, deparse, character(1)), collapse=', '))
+        code <- paste0(code, comment)
+      }
+    }
+    cat(sprintf("[%d] %s\n", i, code))
+  }
+  invisible(x)
+}
+
+

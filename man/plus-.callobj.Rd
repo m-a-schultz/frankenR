@@ -4,12 +4,12 @@
 \alias{+.callobj}
 \title{Add or modify arguments in a call}
 \usage{
-\method{+}{callobj}(e1, e2)
+\method{+}{callobj}(x, y)
 }
 \arguments{
-\item{e1}{A call object.}
+\item{x}{A call object.}
 
-\item{e2}{A named list (for setting arguments) or a single value (for appending).}
+\item{y}{A named list (for setting arguments) or a single value (for appending).}
 }
 \description{
 Add or modify arguments in a call

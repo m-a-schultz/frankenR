@@ -2,21 +2,20 @@
 % Please edit documentation in R/capture.R
 \name{capture}
 \alias{capture}
-\title{Start a capture session or capture code}
+\title{General capture interface}
 \usage{
-capture(x, script = NULL)
+capture(x, script = NULL, envir = parent.frame())
 }
 \arguments{
-\item{x}{Optional: A code block (`{}`)}
+\item{x}{A code block `{}` or missing}
 
-\item{script}{Optional: script file path.}
+\item{script}{Optional path to script}
+
+\item{envir}{Environment to associate capture with}
 }
 \value{
-A `code_capture` object, or starts a capture session.
+A `code_capture` object or TRUE if session started
 }
 \description{
-Depending on the input:
-- If no input, starts a session capture (top-level expressions).
-- If given a `{}` block, captures it immediately.
-- If given a script file path, captures and parses it.
+General capture interface
 }

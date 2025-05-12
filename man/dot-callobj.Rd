@@ -4,12 +4,12 @@
 \alias{-.callobj}
 \title{Remove arguments from a call}
 \usage{
-\method{-}{callobj}(e1, e2)
+\method{-}{callobj}(x, y)
 }
 \arguments{
-\item{e1}{A call object.}
+\item{x}{A call object.}
 
-\item{e2}{A character vector (names) or numeric vector (positions).}
+\item{y}{A character vector (names) or numeric vector (positions).}
 }
 \description{
 Remove arguments from a call

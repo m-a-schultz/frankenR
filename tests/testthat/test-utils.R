@@ -18,11 +18,11 @@ test_that("get_arguments extracts arguments correctly", {
 })
 
 test_that("get_expr_text returns deparsed expressions", {
-  cap <- structure(list(
+  cap <- format_capture(
     capture_type = "block",
-    expressions = list(quote(mean(x)), quote(sum(x))),
-    pseudo = list()
-  ), class = "code_capture")
+    expr = list(quote(mean(x)), quote(sum(x))),
+    meta = list()
+  )
 
   text <- get_expr_text(cap)
   expect_true(any(grepl("mean\\(x\\)", text)))
@@ -30,11 +30,11 @@ test_that("get_expr_text returns deparsed expressions", {
 })
 
 test_that("get_all_arguments returns all arguments from capture", {
-  cap <- structure(list(
+  cap <- format_capture(
     capture_type = "block",
-    expressions = list(quote(mean(x, trim = 0.1)), quote(sum(x))),
-    pseudo = list()
-  ), class = "code_capture")
+    expr = list(quote(mean(x, trim = 0.1)), quote(sum(x))),
+    meta = list()
+  )
 
   args_list <- get_all_arguments(cap)
   expect_length(args_list, 2)

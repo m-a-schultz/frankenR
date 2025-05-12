@@ -7,7 +7,7 @@
 wrap_expr(expr, wrapper_fn)
 }
 \arguments{
-\item{expr}{A call or list of calls.}
+\item{expr}{A expression or callobj}
 
 \item{wrapper_fn}{A function name (symbol or character) to wrap with.}
 }

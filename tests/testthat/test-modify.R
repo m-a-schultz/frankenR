@@ -67,3 +67,100 @@ test_that("unwrap_expr unwraps correctly", {
   expect_equal(get_function_name(unwrapped), as.name("+"))
 })
 
+test_that("sort_capture reorders expressions correctly", {
+  cap <- capture({
+    y <- x + 1
+    f <- function(z) z * 2
+    z <- f(y)
+  })
+
+  sorted <- sort_capture(cap)
+  sorted_exprs <- get_expressions(sorted)
+
+  # Check that function definitions come first
+  expect_true(any(grepl("function", deparse(sorted_exprs[[1]]))))
+})
+
+test_that("duplicate_line duplicates expressions correctly", {
+  cap <- capture({
+    a <- 1
+    b <- a + 2
+  })
+
+  cap_dup <- duplicate_line(cap, 1)
+  exprs <- get_expressions(cap_dup)
+
+  expect_equal(length(exprs), 3)
+  expect_equal(deparse(exprs[[1]]), deparse(exprs[[2]]))
+})
+
+library(testthat)
+
+test_that("modify.R functions work with call and callobj", {
+  # Base call
+  expr <- call("plot", quote(x), quote(y))
+  call_obj <- new_callobj(expr, meta = list(tag = "test"))
+
+  # ---- set_arg ----
+  modified_call <- set_arg(expr, "main", "Title")
+  expect_true(is.call(modified_call))
+  expect_equal(modified_call$main, "Title")
+
+  modified_obj <- set_arg(call_obj, "main", "Title")
+  expect_s3_class(modified_obj, "callobj")
+  expect_equal(modified_obj$meta$tag, "test")
+  expect_equal(modified_obj$expr$main, "Title")
+
+  # ---- change_arg ----
+  changed_call <- change_arg(modified_call, "main", "New Title")
+  expect_equal(changed_call$main, "New Title")
+
+  changed_obj <- change_arg(modified_obj, "main", "New Title")
+  expect_equal(changed_obj$expr$main, "New Title")
+  expect_equal(changed_obj$meta$tag, "test")
+
+  # ---- remove_arg ----
+  removed_call <- remove_arg(changed_call, "main")
+  expect_null(removed_call$main)
+
+  removed_obj <- remove_arg(changed_obj, "main")
+  expect_null(removed_obj$expr$main)
+  expect_equal(removed_obj$meta$tag, "test")
+
+  # ---- add_arg ----
+  added_call <- add_arg(expr, value = 42, name = "cex")
+  expect_equal(added_call$cex, 42)
+
+  added_obj <- add_arg(call_obj, value = 42, name = "cex")
+  expect_equal(added_obj$expr$cex, 42)
+  expect_equal(added_obj$meta$tag, "test")
+
+  # ---- change_func ----
+  changed_func_call <- change_func(expr, "lines")
+  expect_equal(as.character(changed_func_call[[1]]), "lines")
+
+  changed_func_obj <- change_func(call_obj, "lines")
+  expect_equal(as.character(changed_func_obj$expr[[1]]), "lines")
+  expect_equal(changed_func_obj$meta$tag, "test")
+
+  # ---- wrap_expr ----
+  wrapped_call <- wrap_expr(expr, "invisible")
+  expect_equal(as.character(wrapped_call[[1]]), "invisible")
+
+  wrapped_obj <- wrap_expr(call_obj, "invisible")
+  expect_equal(as.character(wrapped_obj$expr[[1]]), "invisible")
+  expect_equal(wrapped_obj$meta$tag, "test")
+
+  # ---- unwrap_expr ----
+  inner_expr <- call("sqrt", 4)
+  wrapped <- call("identity", inner_expr)
+  call_obj2 <- new_callobj(wrapped, meta = list(note = "unwrap test"))
+
+  unwrapped_call <- unwrap_expr(wrapped)
+  expect_equal(unwrapped_call, inner_expr)
+
+  unwrapped_obj <- unwrap_expr(call_obj2)
+  expect_equal(unwrapped_obj$expr, inner_expr)
+  expect_equal(unwrapped_obj$meta$note, "unwrap test")
+})
+

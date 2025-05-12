@@ -16,15 +16,15 @@ test_that("atomize_expr_with_counter returns updated counter", {
 })
 
 test_that("atomize_capture fully atomizes all expressions in capture", {
-  cap <- structure(list(
+  cap <- format_capture(
     capture_type = "block",
-    expressions = list(quote(sum(mean(x), sd(y)))),
-    pseudo = list()
-  ), class = "code_capture")
+    expr = list(quote(sum(mean(x), sd(y)))),
+    meta = list()
+  )
 
   atomized <- atomize_capture(cap)
   expect_s3_class(atomized, "code_capture")
-  expect_true(length(atomized$expressions) > 1)
+  expect_true(length(get_expressions(atomized)) > 1)
 })
 
 test_that("atomize_selective_expr only atomizes specified functions", {
@@ -46,13 +46,14 @@ test_that("atomize_selective_expr_with_counter updates counter correctly", {
 })
 
 test_that("atomize_selective_capture selectively atomizes a code_capture", {
-  cap <- structure(list(
+  cap <- format_capture(
     capture_type = "block",
-    expressions = list(quote(sum(mean(x), sd(y)))),
-    pseudo = list()
-  ), class = "code_capture")
+    expr = list(quote(sum(mean(x), sd(y)))),
+    meta = list()
+  )
 
   atomized <- atomize_selective_capture(cap, fn_names = "mean")
   expect_s3_class(atomized, "code_capture")
-  expect_true(length(atomized$expressions) > 1)
+  expect_true(length(get_expressions(atomized)) > 1)
 })
+

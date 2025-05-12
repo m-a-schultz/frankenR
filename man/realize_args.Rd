@@ -16,5 +16,6 @@ A call with realized arguments, or a list of realized calls.
 }
 \description{
 Evaluates all arguments inside a function call, leaving the function name unchanged.
+For assignment calls, only the RHS is evaluated; the LHS is preserved as a symbol.
 If an evaluation fails, the original unevaluated expression is kept.
 }

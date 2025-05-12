@@ -4,17 +4,19 @@
 \alias{normalize_call}
 \title{Normalize a single call by naming unnamed arguments}
 \usage{
-normalize_call(expr, env = parent.frame(), partial_match = TRUE)
+normalize_call(expr, env = parent.frame(), partial_match = TRUE, strict = TRUE)
 }
 \arguments{
-\item{expr}{A call object.}
+\item{expr}{A call object or callobj.}
 
 \item{env}{Environment to find the function (default: `parent.frame()`).}
 
 \item{partial_match}{Logical; whether to allow partial matching of argument names (default: TRUE).}
+
+\item{strict}{Logical; whether to forcibly assign argument names even for positional matches (default: TRUE).}
 }
 \value{
-A call object with named arguments where safe.
+The modified call or callobj (same type as input).
 }
 \description{
 Attempts to add names to unnamed arguments in a call based on the function's formals.

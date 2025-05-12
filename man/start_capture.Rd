@@ -7,15 +7,15 @@
 start_capture(clear = TRUE, envir = parent.frame(), nframe = sys.nframe())
 }
 \arguments{
-\item{clear}{Logical; if TRUE, clears previous captures before starting.}
+\item{clear}{Whether to clear previous buffer}
 
-\item{envir}{Environment where capture will evaluate (usually left as default).}
+\item{envir}{Environment to associate capture with}
 
-\item{nframe}{Internal frame-checking safeguard (do not modify).}
+\item{nframe}{Internal safeguard}
 }
 \value{
-Invisibly returns TRUE.
+Invisibly TRUE
 }
 \description{
-Begins recording expressions evaluated at the top level during the session.
+Start capturing top-level expressions
 }

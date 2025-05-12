@@ -7,7 +7,7 @@
 add_arg(expr, value, name = NULL, position = NULL)
 }
 \arguments{
-\item{expr}{A call or list of calls.}
+\item{expr}{A expression or callobj}
 
 \item{value}{The value to add as an argument.}
 

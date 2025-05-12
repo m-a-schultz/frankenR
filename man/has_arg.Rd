@@ -7,7 +7,7 @@
 has_arg(expr, name)
 }
 \arguments{
-\item{expr}{A call object.}
+\item{expr}{A expression or callobj}
 
 \item{name}{The argument name to check for.}
 }

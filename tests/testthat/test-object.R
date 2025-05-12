@@ -1,35 +1,33 @@
-test_that("capture_object creates an object with correct class", {
-  obj <- capture_object(list(quote(mean(x)), quote(sum(x))))
-  expect_s3_class(obj, "capture_object")
-  expect_length(obj, 2)
-})
+test_that("[[<- for code_capture replaces elements correctly", {
+  cap <- format_capture(expr = list(quote(mean(x)), quote(sum(x))),
+    meta = list()
+  )
 
-test_that("Subsetting a capture_object preserves class", {
-  obj <- capture_object(list(quote(mean(x)), quote(sum(x))))
-  subsetted <- obj[1]
-  expect_s3_class(subsetted, "capture_object")
-  expect_length(subsetted, 1)
-})
-
-test_that("[<- for code_capture replaces elements correctly", {
-  cap <- structure(list(
-    capture_type = "block",
-    expressions = list(quote(mean(x)), quote(sum(x))),
-    pseudo = list()
-  ), class = "code_capture")
-
-  cap[1] <- quote(median(x))
-  expect_equal(deparse(cap$expressions[[1]]), "median(x)")
+  cap[[1]]$expr <- quote(median(x))
+  expect_equal(deparse(get_expressions(cap)[[1]]), "median(x)")
 })
 
 test_that("print.code_capture prints summary correctly", {
-  cap <- structure(list(
-    capture_type = "block",
-    expressions = list(quote(mean(x)), quote(sum(x))),
-    pseudo = list()
-  ), class = "code_capture")
+  cap <-  format_capture(expr = list(quote(mean(x)), quote(sum(x))),
+                         meta = list(),
+                         capture_type='block')
 
   expect_output(print(cap), "== Code Capture ==")
-  expect_output(print(cap), "Type:  block")
   expect_output(print(cap), "\\[1\\] mean\\(x\\)")
+})
+
+test_that("update_capture modifies expressions and metadata", {
+  cap <- capture({
+    x <- 1
+  })
+
+  new_expr <- quote(y <- 2)
+  new_meta <- list(list(label = "Updated"))
+  updated_cap <- update_capture(cap, expr = list(new_expr), meta = new_meta)
+
+  exprs <- get_expressions(updated_cap)
+  meta <- get_metadata(updated_cap)
+
+  expect_equal(deparse(exprs[[1]]), "y <- 2")
+  expect_equal(meta[[1]]$label, "Updated")
 })

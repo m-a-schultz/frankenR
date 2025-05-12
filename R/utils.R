@@ -8,17 +8,48 @@ is_call_or_list <- function(x) {
   is.call(x) || (is.list(x) && all(vapply(x, is.call, logical(1))))
 }
 
+get_expr <- function(x) {
+  if (inherits(x, "callobj")) x$expr else x
+}
+
+# Creates an output object that matches the type of the input object
+match_input <- function(input, output_expr) {
+  if (inherits(input, "callobj")) {
+    new_callobj(output_expr, input$meta)
+  } else {
+    output_expr
+  }
+}
 # ---- Accessors ----
 
 #' Get the function name from a call
 #'
 #' Extracts the function name (symbol) from a call expression.
 #'
-#' @param expr A call object.
+#' @param x An expression or  call object.
 #' @return The function name as a symbol, or NULL if not a call.
 #' @export
-get_function_name <- function(expr) {
+get_function_name <- function(x) {
+  if(inherits(x, 'callobj')){
+    expr <- x$expr
+  }else{
+    expr <- x
+  }
   if (is.call(expr)) expr[[1]] else NULL
+}
+
+#' Get top-level function names from expressions
+#'
+#' Extracts the function name from each expression in a `code_capture` object.
+#'
+#' @param capture A `code_capture` object.
+#' @return A character vector of function names (or NA for non-calls).
+#' @export
+get_top_function_names <- function(capture) {
+  stopifnot(inherits(capture, "code_capture"))
+  vapply(get_expressions(capture), function(e) {
+    if (is.call(e)) as.character(e[[1]]) else NA_character_
+  }, character(1))
 }
 
 #' Get the arguments from a call
@@ -42,7 +73,8 @@ get_arguments <- function(expr) {
 #' @export
 get_expr_text <- function(capture, collapse = "\n") {
   stopifnot(inherits(capture, "code_capture"))
-  vapply(capture$expressions, function(e) {
+  vapply(get_expressions(capture), function(e) {
+    #print(e)
     paste(deparse(e), collapse = collapse)
   }, character(1))
 }
@@ -56,7 +88,28 @@ get_expr_text <- function(capture, collapse = "\n") {
 #' @export
 get_all_arguments <- function(capture) {
   stopifnot(inherits(capture, "code_capture"))
-  lapply(capture$expressions, get_arguments)
+  lapply(get_expressions(capture), get_arguments)
 }
+
+
+`%||%` <- function(a, b) if (!is.null(a)) a else b
+
+
+# #' Check if an expression is an assignment
+# #'
+# #' Detects whether the top-level call is an assignment (`<-` or `=`).
+# #'
+# #' @param expr A call or list of calls.
+# #' @return Logical TRUE/FALSE (or logical vector if input is a list).
+# #' @export
+# is_assignment <- function(expr) {
+#   if (is.list(expr)) {
+#     return(vapply(expr, is_assignment, logical(1)))
+#   }
+#   if (!is.call(expr)) return(FALSE)
+#
+#   fun <- as.character(expr[[1]])
+#   fun %in% c("<-", "=")
+# }
 
 

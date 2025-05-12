@@ -18,16 +18,16 @@ test_that("realize_args keeps unevaluable arguments intact", {
 })
 
 test_that("realize_capture realizes all expressions in capture", {
-  cap <- structure(list(
+  cap <- format_capture(
     capture_type = "block",
-    expressions = list(quote(sum(1 + 1, 2 + 2))),
-    pseudo = list()
-  ), class = "code_capture")
+    expr = list(quote(sum(1 + 1, 2 + 2))),
+    meta = list()
+  )
 
   realized <- realize_capture(cap)
 
   expect_s3_class(realized, "code_capture")
-  args <- as.list(realized$expressions[[1]])[-1]
+  args <- as.list(get_expressions(realized)[[1]])[-1]
   expect_equal(args[[1]], 2)
   expect_equal(args[[2]], 4)
 })

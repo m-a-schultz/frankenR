@@ -1,7 +1,7 @@
 Package: frankenR
 Type: Package
 Title: Lightweight Code Capture and Transformation Toolkit
-Version: 0.1.0
+Version: 0.3.0
 Authors@R: person(given = "Michael", family = "Schultz", role = c("aut", "cre"), email = "m.a.schultz@protonmail.com")
 Description: Provides lightweight tools for capturing, manipulating, normalizing, and analyzing R expressions and code blocks. Features include session and script capture, expression atomization, argument modification, selective filtering, and metadata attachment.
 License: MIT + file LICENSE

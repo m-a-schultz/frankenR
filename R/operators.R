@@ -2,10 +2,12 @@
 
 #' Add or modify arguments in a call
 #'
-#' @param e1 A call object.
-#' @param e2 A named list (for setting arguments) or a single value (for appending).
+#' @param x A call object.
+#' @param y A named list (for setting arguments) or a single value (for appending).
 #' @export
-`+.callobj` <- function(e1, e2) {
+`+.callobj` <- function(x, y) {
+  e1 <- x$expr
+  e2 <- y
   stopifnot(is.call(e1))
 
   if (is.list(e2) && !is.null(names(e2)) && all(names(e2) != "")) {
@@ -13,19 +15,22 @@
     for (nm in names(e2)) {
       e1 <- set_arg(e1, nm, e2[[nm]])
     }
-    return(e1)
+    x$expr <- e1
+    return(x)
   }
 
   # Single value: append as unnamed argument
-  add_arg(e1, value = e2)
+  new_callobj(add_arg(e1, value = y), x$meta)
 }
 
 #' Remove arguments from a call
 #'
-#' @param e1 A call object.
-#' @param e2 A character vector (names) or numeric vector (positions).
+#' @param x A call object.
+#' @param y A character vector (names) or numeric vector (positions).
 #' @export
-`-.callobj` <- function(e1, e2) {
+`-.callobj` <- function(x, y) {
+  e1 <- x$expr
+  e2 <- y
   stopifnot(is.call(e1))
 
   args <- as.list(e1)
@@ -53,7 +58,8 @@
     stop("Unsupported type for '-.callobj'. Must be character or numeric.")
   }
 
-  as.call(c(fn, args_rest))
+  x$expr <- as.call(c(fn, args_rest))
+  x
 }
 
 
@@ -66,7 +72,7 @@
 `[.callobj` <- function(x, i, ...) {
 
   #stopifnot(is.call(x))
-  x <- unclass(x)
+  x <- x$expr
   args <- as.list(x)[-1]
 
   if (is.character(i)) {
@@ -82,19 +88,17 @@
     if (i > length(unnamed_args)) stop("Subscript out of bounds for unnamed argument.")
     unnamed_args[[i]]
   } else {
-    stop("Unsupported index type for '[[.callpbj'. Must be character or numeric.")
+    stop("Unsupported index type for '[[.callobj'. Must be character or numeric.")
   }
 }
 
-
-
-#' Extract an argument by name (shorthand)
+#' Length of a code_capture object
 #'
-#' @param x A call object.
-#' @param name Name of the argument.
+#' @param x `code_capture` object.
+#' @return The number of expressions in the capture
 #' @export
-`$.callobj` <- function(x, name) {
-  x[name]
+`length.code_capture` <- function(x) {
+  return( length(x$data))
 }
 
 #' Concatenate two code_capture objects
@@ -109,15 +113,9 @@
   stopifnot(inherits(e1, "code_capture"), inherits(e2, "code_capture"))
 
   new_capture_type <- paste(e1$capture_type, "+", e2$capture_type)
-
-  structure(
-    list(
-      capture_type = new_capture_type,
-      expressions = c(e1$expressions, e2$expressions),
-      meta = c(e1$meta, e2$meta)
-    ),
-    class = "code_capture"
-  )
+  new_capture(rbind(e1$data,
+                    e2$data),
+              capture_type = new_capture_type)
 }
 
 #' Extract an expression from a code_capture object
@@ -131,10 +129,7 @@
 #' @export
 `[[.code_capture` <- function(x, i, ...) {
   stopifnot(inherits(x, "code_capture"))
-  structure(
-    x$expressions[[i]],
-    class='callobj'
-  )
+  x$data[[i]]
 }
 
 #' Replace an expression inside a code_capture object
@@ -148,24 +143,25 @@
 #' @export
 `[[<-.code_capture` <- function(x, i, value) {
   stopifnot(inherits(x, "code_capture"))
-  stopifnot(is.call(value))
+  stopifnot(inherits(value,"callobj"))
 
-  x$expressions[[i]] <- value
+  x$data[[i]] <- value
   x
 }
 
 #' Convert a call object to a list
 #'
-#' This method defines `as.list()` for objects of class `"call"`, allowing
+#' This method defines `as.list()` for objects of class `"callobj"`, allowing
 #' function call expressions to be treated as lists of their components.
 #' It temporarily removes the `"call"` class before conversion to avoid
 #' dispatch issues and ensure correct coercion.
 #'
 #' @param x A call object.
-#' @return A list where the first element is the function being called,
+#' @param ... Unsupported
+#' @return A list where the first element is the function being called in the expression,
 #'   followed by its arguments.
 #' @export
-as.list.callobj <- function(x) {
-  x <- unclass(x)
+as.list.callobj <- function(x, ...) {
+  x <- unclass(x$expr)
   base::as.list(x)
 }

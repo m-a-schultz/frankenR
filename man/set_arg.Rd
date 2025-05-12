@@ -7,7 +7,7 @@
 set_arg(expr, name, value)
 }
 \arguments{
-\item{expr}{A call or list of calls.}
+\item{expr}{A expression or callobj.}
 
 \item{name}{The argument name.}
 

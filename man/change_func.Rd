@@ -7,7 +7,7 @@
 change_func(expr, new_func)
 }
 \arguments{
-\item{expr}{A call or list of calls.}
+\item{expr}{A expression or callobj}
 
 \item{new_func}{The new function name (symbol or character).}
 }

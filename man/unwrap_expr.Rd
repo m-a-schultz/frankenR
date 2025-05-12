@@ -7,7 +7,7 @@
 unwrap_expr(expr)
 }
 \arguments{
-\item{expr}{A call or list of calls.}
+\item{expr}{A expression or callobj}
 }
 \value{
 The unwrapped expression(s).

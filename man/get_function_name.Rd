@@ -4,10 +4,10 @@
 \alias{get_function_name}
 \title{Get the function name from a call}
 \usage{
-get_function_name(expr)
+get_function_name(x)
 }
 \arguments{
-\item{expr}{A call object.}
+\item{x}{An expression or  call object.}
 }
 \value{
 The function name as a symbol, or NULL if not a call.

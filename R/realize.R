@@ -3,6 +3,7 @@
 #' Realize (evaluate) the arguments of a call
 #'
 #' Evaluates all arguments inside a function call, leaving the function name unchanged.
+#' For assignment calls, only the RHS is evaluated; the LHS is preserved as a symbol.
 #' If an evaluation fails, the original unevaluated expression is kept.
 #'
 #' @param expr A call or list of calls.
@@ -15,6 +16,13 @@ realize_args <- function(expr, envir = parent.frame()) {
   }
   stopifnot(is.call(expr))
 
+  if (is_assignment(expr)) {
+    # special case: do not realize LHS
+    lhs <- expr[[2]]
+    rhs <- tryCatch(eval(expr[[3]], envir = envir), error = function(e) expr[[3]])
+    return(as.call(list(expr[[1]], lhs, rhs)))
+  }
+
   args <- as.list(expr)
   fn <- args[[1]]
 
@@ -24,6 +32,7 @@ realize_args <- function(expr, envir = parent.frame()) {
 
   as.call(c(list(fn), realized_args))
 }
+
 
 #' Realize arguments across a code_capture object
 #'
@@ -36,7 +45,14 @@ realize_args <- function(expr, envir = parent.frame()) {
 realize_capture <- function(capture, envir = parent.frame()) {
   stopifnot(inherits(capture, "code_capture"))
 
-  realized_exprs <- lapply(capture$expressions, realize_args, envir = envir)
+  realized_exprs <- list()
+  for(expr in get_expressions(capture)){
+    r_expr <- realize_args(expr, envir = envir)
+    eval(r_expr, envir=envir)
+    realized_exprs <- c(realized_exprs,
+                        r_expr)
+  }
 
-  format_capture(realized_exprs, capture_type = capture$capture_type)
+  #format_capture(realized_exprs, capture_type = capture$capture_type)
+  update_capture(capture, expr = realized_exprs)
 }

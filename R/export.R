@@ -20,7 +20,7 @@ rerun_capture <- function(capture,
                           new_env = FALSE) {
   stopifnot(inherits(capture, "code_capture"))
 
-  exprs <- capture$expressions
+  exprs <- get_expressions(capture)
 
   if (new_env) {
     envir <- new.env(parent = emptyenv())
@@ -89,9 +89,8 @@ export_capture <- function(capture,
   }
 
   # Get expressions and their corresponding metadata
-  exprs <- capture$expressions
-  meta_info <- capture$meta
-
+  exprs <- get_expressions(capture)
+  meta_info <- get_metadata(capture)
   output_lines <- character()
 
   for (i in seq_along(exprs)) {
@@ -106,19 +105,21 @@ export_capture <- function(capture,
 
       if (meta == "comments") {
         # Convert metadata to `# key: value` lines
-        comment_lines <- paste0("# ", names(meta_entry), ": ", vapply(meta_entry, deparse, character(1)))
-        output_lines <- c(output_lines, comment_lines)
+        comment_line <- paste0('     # ',
+                               paste0(names(meta_entry),' = ', vapply(meta_entry, deparse, character(1)), collapse=', '))
+        expr_text <- paste0(expr_text, comment_line)
 
       } else if (meta == "code") {
         # Convert metadata to a real `meta(...)` call
-        meta_call <- as.call(c(as.name("meta"), meta_entry))
-        meta_text <- paste(deparse(meta_call), collapse = "\n")
-        output_lines <- c(output_lines, meta_text)
+        comment_line <- paste0('meta( ',
+                               paste0(names(meta_entry),' = ', vapply(meta_entry, deparse, character(1)), collapse=', '),
+                               ' )')
+        expr_text <- c(expr_text, comment_line)
       }
     }
-
     # Append the main expression after meta (if any)
     output_lines <- c(output_lines, expr_text)
+
   }
 
   # Write all lines to the file

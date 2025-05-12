@@ -5,8 +5,8 @@ test_that("capture_block captures expressions inside a block", {
 
   expect_s3_class(cap, "code_capture")
   expect_equal(cap$capture_type, "block")
-  expect_length(cap$expressions, 1)
-  expect_equal(get_function_name(cap$expressions[[1]]), as.name("{"))
+  expect_length(get_expressions(cap), 1)
+  expect_equal(get_function_name(get_expressions(cap)[[1]]), as.name("{"))
 })
 test_that("capture_block captures expressions inside a block", {
   cap <- capture({
@@ -15,8 +15,8 @@ test_that("capture_block captures expressions inside a block", {
 
   expect_s3_class(cap, "code_capture")
   expect_equal(cap$capture_type, "block")
-  expect_length(cap$expressions, 2)
-  expect_equal(get_function_name(cap$expressions[[1]]), as.name("mean"))
+  expect_length(get_expressions(cap), 2)
+  expect_equal(get_function_name(get_expressions(cap)[[1]]), as.name("mean"))
 })
 
 
@@ -26,7 +26,7 @@ test_that("format_capture wraps calls into a code_capture object", {
 
   expect_s3_class(cap, "code_capture")
   expect_equal(cap$capture_type, "test")
-  expect_equal(length(cap$expressions), 1)
+  expect_equal(length(get_expressions(cap)), 1)
 })
 
 test_that("process_expressions attaches metadata correctly", {
@@ -38,21 +38,7 @@ test_that("process_expressions attaches metadata correctly", {
   calls <- process_expressions(exprs)
 
   expect_equal(length(calls), 2)
-  expect_equal(calls[[1]]$meta$label, "First call")
-})
-
-test_that("capture_call creates a call capture with empty pseudo", {
-  captured <- capture_call(quote(mean(x)))
-
-  expect_true(is.list(captured))
-  expect_true(is.call(captured$expr))
-  expect_equal(captured$meta, list())
-})
-
-test_that("capture_end errors if no active capture session", {
-  # Simulate no session active
-  .capture_store$active <- FALSE
-  expect_error(capture_end(), "No active capture session")
+  expect_equal(calls[[1]]$meta$._label, "First call")
 })
 
 
@@ -66,9 +52,9 @@ test_that("Block capture works", {
 
   expect_s3_class(block_cap, "code_capture")
   expect_equal(block_cap$capture_type, "block")
-  expect_length(block_cap$expressions, 3)
+  expect_length(get_expressions(block_cap), 3)
 
-  expect_equal(block_cap$meta[[2]]$info, "calculation")
+  expect_equal(get_metadata(block_cap)[[2]]$._info, "calculation")
 })
 
 test_that("Script capture works", {
@@ -85,8 +71,8 @@ test_that("Script capture works", {
   script_cap <- capture(script = tmp_script)
   expect_s3_class(script_cap, "code_capture")
   expect_equal(script_cap$capture_type, "script")
-  expect_length(script_cap$expressions, 3)
+  expect_length(get_expressions(script_cap), 3)
 
-  expect_equal(script_cap$meta[[2]]$._desc, "square")
+  expect_equal(get_metadata(script_cap)[[2]]$._desc, "square")
 })
 

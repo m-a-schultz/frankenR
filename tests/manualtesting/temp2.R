@@ -1,0 +1,15 @@
+cap <- capture({
+  x <- rnorm(100)
+  hist(x)
+  meta(._label = "Initial histogram")
+  abline(v=mean(x))
+})
+
+cap[[2]] <- cap[[2]] + list(main = "Updated")
+cap[[3]] <- cap[[3]] + list(col='Red')
+cap <- normalize_capture(cap)
+print(cap)
+cap <- atomize_capture(cap, depth = 2)
+print(cap)
+export_capture(cap, "plot.R", meta = "comments")
+rerun_capture(cap, verbose = TRUE)

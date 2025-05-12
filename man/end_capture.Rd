@@ -2,14 +2,18 @@
 % Please edit documentation in R/capture.R
 \name{end_capture}
 \alias{end_capture}
-\title{End capturing and process expressions}
+\title{Finalize session capture}
 \usage{
-end_capture()
+end_capture(realize = FALSE, envir = parent.frame())
+}
+\arguments{
+\item{realize}{Realize arguments (default FALSE)}
+
+\item{envir}{Evaluation environment}
 }
 \value{
-A list of captured and processed expressions.
+A list of `callobj` objects
 }
 \description{
-Stops the capture session and processes the collected expressions,
-handling any attached metadata.
+Finalize session capture
 }

@@ -2,18 +2,30 @@
 % Please edit documentation in R/capture.R
 \name{capture_script}
 \alias{capture_script}
-\title{Capture code from a script}
+\title{Capture a script file}
 \usage{
-capture_script(path, encoding = "UTF-8")
+capture_script(
+  path,
+  encoding = "UTF-8",
+  realize = FALSE,
+  evaluate = FALSE,
+  envir = parent.frame()
+)
 }
 \arguments{
-\item{path}{script file path.}
+\item{path}{Path to script}
 
-\item{encoding}{file encoding of script}
+\item{encoding}{File encoding (default UTF-8)}
+
+\item{realize}{Realize arguments (default FALSE)}
+
+\item{evaluate}{Evaluate immediately (default FALSE)}
+
+\item{envir}{Evaluation environment}
 }
 \value{
 A `code_capture` object
 }
 \description{
-Capture code from a script
+Capture a script file
 }

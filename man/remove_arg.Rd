@@ -7,7 +7,7 @@
 remove_arg(expr, name)
 }
 \arguments{
-\item{expr}{A call or list of calls.}
+\item{expr}{A expression or callobj.}
 
 \item{name}{The argument name to remove.}
 }

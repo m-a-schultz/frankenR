@@ -1,66 +1,43 @@
 # ---- Normalization Functions ----
 
-#' Normalize all calls inside an expression
-#'
-#' Recursively normalizes a call or list of calls by naming unnamed arguments
-#' where safe and possible.
-#'
-#' @param expr A call, expression, or list of calls.
-#' @param env Environment to find functions (default: `parent.frame()`).
-#' @param partial_match Logical; whether to allow partial matching of argument names (default: TRUE).
-#' @return A normalized version of the expression or block.
-#' @export
-normalize_calls <- function(expr, env = parent.frame(), partial_match = TRUE) {
-  if (is.call(expr)) {
-    expr_norm <- tryCatch(
-      normalize_call(expr, env = env, partial_match = partial_match),
-      error = function(e) expr  # If error, leave as-is
-    )
-
-    expr_args <- as.list(expr_norm)
-    for (i in seq_along(expr_args)) {
-      if (i == 1) next  # Skip function name
-      expr_args[[i]] <- normalize_calls(expr_args[[i]], env = env, partial_match = partial_match)
-    }
-
-    as.call(expr_args)
-
-  } else if (is.expression(expr) || is.list(expr)) {
-    # Recurse through each element
-    as.call(lapply(expr, normalize_calls, env = env, partial_match = partial_match))
-
-  } else {
-    expr
-  }
-}
-
 #' Normalize a single call by naming unnamed arguments
 #'
 #' Attempts to add names to unnamed arguments in a call based on the function's formals.
 #'
-#' @param expr A call object.
+#' @param expr A call object or callobj.
 #' @param env Environment to find the function (default: `parent.frame()`).
 #' @param partial_match Logical; whether to allow partial matching of argument names (default: TRUE).
-#' @return A call object with named arguments where safe.
+#' @param strict Logical; whether to forcibly assign argument names even for positional matches (default: TRUE).
+#' @return The modified call or callobj (same type as input).
 #' @export
-normalize_call <- function(expr, env = parent.frame(), partial_match = TRUE) {
-  if (!is.call(expr)) return(expr)  # Leave non-calls unchanged
+normalize_call <- function(expr, env = parent.frame(), partial_match = TRUE, strict = TRUE) {
+  e <- get_expr(expr)
+  if (!is.call(e)) return(expr)
 
-  fn_name <- as.character(expr[[1]])
-  fn <- tryCatch(get(fn_name, envir = env), error = function(e) NULL)
-  if (is.null(fn)) return(expr)  # Cannot find function; return unchanged
+  # Special case: assignment → only normalize RHS
+  if (is_assignment(expr)) {
+    rhs <- get_rhs(expr)
+    new_rhs <- normalize_call(rhs, env = env, partial_match = partial_match, strict = strict)
+    return(set_rhs(expr, new_rhs))
+  }
+
+  # Normal case: function call
+  fn_name <- e[[1]]
+  fn <- tryCatch(
+    if (is.symbol(fn_name)) get(as.character(fn_name), envir = env) else NULL,
+    error = function(e) NULL
+  )
+  if (is.null(fn) || !is.function(fn)) return(expr)
 
   formals_list <- tryCatch(formals(fn), error = function(e) NULL)
-  if (is.null(formals_list)) return(expr)  # Cannot read formals
+  if (is.null(formals_list)) return(expr)
 
   formal_args <- names(formals_list)
   if (is.null(formal_args)) return(expr)
 
-  call_args <- as.list(expr)[-1]
+  call_args <- as.list(e)[-1]
   arg_names <- names(call_args)
-  if (is.null(arg_names)) {
-    arg_names <- rep("", length(call_args))
-  }
+  if (is.null(arg_names)) arg_names <- rep("", length(call_args))
 
   normalized_args <- list()
   formal_pos <- 1
@@ -69,18 +46,23 @@ normalize_call <- function(expr, env = parent.frame(), partial_match = TRUE) {
     name <- arg_names[i]
 
     if (is.null(name) || name == "") {
-      # Unnamed: match positionally
+      # Unnamed → match by position
       while (formal_pos <= length(formal_args) && formal_args[formal_pos] == "...") {
         formal_pos <- formal_pos + 1
       }
       if (formal_pos <= length(formal_args)) {
-        normalized_args[[formal_args[formal_pos]]] <- call_args[[i]]
+        matched_name <- formal_args[formal_pos]
+        if (strict) {
+          normalized_args[[matched_name]] <- call_args[[i]]
+        } else {
+          normalized_args[[i]] <- call_args[[i]]
+        }
         formal_pos <- formal_pos + 1
       } else {
         normalized_args[[i]] <- call_args[[i]]
       }
     } else if (partial_match) {
-      # Named: check for exact or safe partial match
+      # Named → check partial match
       exact_match <- name %in% formal_args
       partial_matches <- which(startsWith(formal_args, name))
 
@@ -96,8 +78,11 @@ normalize_call <- function(expr, env = parent.frame(), partial_match = TRUE) {
     }
   }
 
-  as.call(c(expr[[1]], normalized_args))
+  new_call <- as.call(c(fn_name, normalized_args))
+  match_input(expr, new_call)
 }
+
+
 
 #' Normalize a code_capture object
 #'
@@ -112,65 +97,8 @@ normalize_call <- function(expr, env = parent.frame(), partial_match = TRUE) {
 normalize_capture <- function(capture, env = parent.frame(), partial_match = TRUE) {
   stopifnot(inherits(capture, "code_capture"))
 
-  normalize_single_expr <- function(expr) {
-    if (!is.call(expr)) return(expr)
-
-    fn_name <- as.character(expr[[1]])
-    fn <- tryCatch(get(fn_name, envir = env), error = function(e) NULL)
-    if (is.null(fn)) return(expr)
-
-    formals_list <- tryCatch(formals(fn), error = function(e) NULL)
-    if (is.null(formals_list)) return(expr)
-
-    formal_args <- names(formals_list)
-    if (is.null(formal_args)) return(expr)
-
-    call_args <- as.list(expr)[-1]
-    arg_names <- names(call_args)
-    if (is.null(arg_names)) {
-      arg_names <- rep("", length(call_args))
-    }
-
-    normalized_args <- list()
-    formal_pos <- 1
-
-    for (i in seq_along(call_args)) {
-      name <- arg_names[i]
-
-      if (is.null(name) || name == "") {
-        # Unnamed: match positionally
-        while (formal_pos <= length(formal_args) && formal_args[formal_pos] == "...") {
-          formal_pos <- formal_pos + 1
-        }
-        if (formal_pos <= length(formal_args)) {
-          normalized_args[[formal_args[formal_pos]]] <- call_args[[i]]
-          formal_pos <- formal_pos + 1
-        } else {
-          normalized_args[[i]] <- call_args[[i]]
-        }
-      } else if (partial_match) {
-        # Named: check for exact or safe partial match
-        exact_match <- name %in% formal_args
-        partial_matches <- which(startsWith(formal_args, name))
-
-        if (exact_match) {
-          normalized_args[[name]] <- call_args[[i]]
-        } else if (length(partial_matches) == 1) {
-          normalized_args[[formal_args[partial_matches]]] <- call_args[[i]]
-        } else {
-          normalized_args[[name]] <- call_args[[i]]
-        }
-      } else {
-        normalized_args[[name]] <- call_args[[i]]
-      }
-    }
-
-    as.call(c(expr[[1]], normalized_args))
-  }
-
-  normalized_exprs <- lapply(capture$expressions, normalize_single_expr)
-
-  format_capture(normalized_exprs, capture_type = capture$capture_type, meta = capture$meta)
+  normalized_exprs <- lapply(get_expressions(capture), normalize_call)
+  update_capture(capture, expr=normalized_exprs)
 }
 
 

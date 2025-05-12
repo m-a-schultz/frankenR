@@ -2,18 +2,17 @@
 % Please edit documentation in R/object.R
 \name{print.code_capture}
 \alias{print.code_capture}
-\title{Print a code_capture object}
+\title{Print method for code_capture objects}
 \usage{
-\method{print}{code_capture}(x, ...)
+\method{print}{code_capture}(x, with_meta = TRUE, ...)
 }
 \arguments{
-\item{x}{A `code_capture` object.}
+\item{x}{A `code_capture` object}
 
-\item{...}{Additional arguments (ignored).}
-}
-\value{
-Invisibly returns the object.
+\item{with_meta}{Boolean; Should metadata be printed}
+
+\item{...}{Ignored}
 }
 \description{
-Prints a summary of the `code_capture` object, including its type and contained expressions.
+Print method for code_capture objects
 }

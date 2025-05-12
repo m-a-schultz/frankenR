@@ -79,19 +79,24 @@ atomize_capture <- function(capture, prefix = "tmp", depth = Inf) {
   stopifnot(inherits(capture, "code_capture"))
 
   all_exprs <- list()
+  all_meta <- list()
   counter <- 1
 
-  for (expr in capture$expressions) {
+  for (i in seq_along(capture$data)){
+    expr <- capture$data[[i]]$expr
+    meta <- capture$data[[i]]$meta
     if (!is.call(expr)) {
       all_exprs[[length(all_exprs) + 1]] <- expr
     } else {
       atomized <- atomize_expr_with_counter(expr, prefix, counter, depth = depth)
+      new_meta <- rep(list(meta), length(atomized$expressions))
       counter <- atomized$counter
       all_exprs <- c(all_exprs, atomized$expressions)
+      all_meta <- c(all_meta, new_meta)
     }
   }
 
-  format_capture(all_exprs, capture_type = capture$capture_type)
+  format_capture(all_exprs, all_meta, capture_type = capture$capture_type)
 }
 
 #' Selectively atomize parts of a code_capture object
@@ -109,19 +114,24 @@ atomize_selective_capture <- function(capture, fn_names, prefix = "tmp", depth =
   stopifnot(inherits(capture, "code_capture"))
 
   all_exprs <- list()
+  all_meta <- list()
   counter <- 1
 
-  for (expr in capture$expressions) {
+  for (i in seq_along(capture$data)){
+    expr <- capture$data[[i]]$expr
+    meta <- capture$data[[i]]$meta
     if (!is.call(expr)) {
       all_exprs[[length(all_exprs) + 1]] <- expr
     } else {
       atomized <- atomize_selective_expr_with_counter(expr, fn_names, prefix, counter, depth = depth)
+      new_meta <- rep(list(meta), length(atomized$expressions))
       counter <- atomized$counter
       all_exprs <- c(all_exprs, atomized$expressions)
+      all_meta <- c(all_meta, new_meta)
     }
   }
 
-  format_capture(all_exprs, capture_type = capture$capture_type)
+  format_capture(all_exprs, all_meta, capture_type = capture$capture_type)
 }
 
 #' Selectively atomize parts of an expression
